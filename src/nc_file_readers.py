@@ -21,7 +21,7 @@ def read_netcdf_header(ncfile):
   dataset = Dataset(ncfile, 'r')
   print(dataset)
   return dataset
-
+  
 #_______________________________________________________________________
 def make_latlon_surface(lats,lons,field2d):
 

@@ -34,6 +34,7 @@ class MainWindow(QtGui.QMainWindow):
     self.vtkWidget  = QVTKRenderWindowInteractor(self.frame)
     self.vl.addWidget(self.vtkWidget)
     self.renderer   = vtk.vtkRenderer()
+    self.renwin     = self.vtkWidget.GetRenderWindow()
     self.vtkWidget.GetRenderWindow().AddRenderer(self.renderer)
     self.interactor = self.vtkWidget.GetRenderWindow().GetInteractor()
     self.frame.setLayout(self.vl)
@@ -45,18 +46,6 @@ class MainWindow(QtGui.QMainWindow):
     # add a toolbar
     self.toolbar = self.addToolBar("toolbar")
     self.toolbar.setMovable(False)
-    #iconSize = QtCore.QSize(24, 24)
-    #self.toolbar.setIconSize(iconSize)
-
-    # add a combo box in the toolbar
-    #self.combo = QtGui.QComboBox()
-    #self.toolbar.addWidget(self.combo)
-    #self.combo.insertItems(1,["One","Two","Three"])
-
-
-    # add another toolbar
-    #self.toolbar2 = self.addToolBar("toolbar2")
-    #self.toolbar2.addAction('action!')
 
     # show window and begin tracking input from vtk widget
     self.show()
@@ -152,7 +141,7 @@ class NCToolbar(QtGui.QToolBar):
       if(variable.ndim>1):
         dim_names = ','.join(dims)
         label = "{0} ({1})".format(variable.name,dim_names)
-        self.scalars_combo.addItem(label)
+        self.scalars_combo.addItem(label,variable.name)
 
 
 
