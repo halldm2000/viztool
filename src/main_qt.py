@@ -23,13 +23,14 @@ def select_scalar_field(i):
   field = g.dataset.variables[varname]
 
   if(field.ndim ==4):
-    field2d = field[g.time_index,0,:,:]
+    field2d = field[g.time_index,g.level_index,:,:]
   
   if(field.ndim ==3):
     field2d = field[g.time_index,:,:]
 
   g.quadsphere.set_scalar_field(field2d)
   window.renwin.Render()
+  window.vtkWidget.setFocus()
 
 #_______________________________________________________________________
 def open_a_file():
@@ -57,19 +58,36 @@ def open_a_file():
   # create a lat-lon surface for interpolated data
   lons    = g.dataset.variables['lon']
   lats    = g.dataset.variables['lat']
-  ps_var  = g.dataset.variables['ps' ]
+  #ps_var  = g.dataset.variables['ps' ]
 
-  ps = ps_var[g.time_index+1,:,:]-ps_var[g.time_index,:,:]
-  #surfaceActor = make_latlon_surface(lats,lons,ps)
-  g.quadsphere = tobs.QuadSphere(lats,lons,ps)
+#ps = ps_var[g.time_index+1,:,:]-ps_var[g.time_index,:,:]
 
-  #surfaceActor = tobs.DataSphere(lats,lons)
+  # init color lookup table
+  nc  = vtk.vtkNamedColors()
+  g.lut = vtk.vtkLookupTable()
+  g.lut.Build()
+  g.lut.SetTableRange(0,1)
+  g.lut.SetHueRange(0.0,1.0)
+  g.lut.SetSaturationRange(1,1);
+  g.lut.SetValueRange(1.0,1.0);
 
-  # reset the scene to a blank slate
-  #ren.RemoveAllViewProps();
-  #ren.RemoveAllLights()
+  # create geometry from lat lon coords
+  # ren.RemoveAllViewProps();
 
+  g.quadsphere = tobs.QuadSphere(lats,lons)
   ren.AddActor(g.quadsphere)
+
+  # add scalar bar actor
+  scalarBar = vtk.vtkScalarBarActor()
+  scalarBar.SetOrientationToVertical()
+  scalarBar.SetLookupTable(g.lut)
+  scalarBar.SetWidth(0.08)
+  scalarBar.SetPosition(0.90,0.1)
+  scalarBar.SetTextPositionToPrecedeScalarBar()
+  ren.AddActor(scalarBar)
+
+  select_scalar_field(g.sfield_index)
+
 
 #_______________________________________________________________________
 def create_default_scene():
@@ -92,15 +110,25 @@ def KeyPressed(obj,event):
 
   key = obj.GetKeySym()
 
+  if key == "Up":
+    g.level_index-=1
+    select_scalar_field(g.sfield_index)
+    print("level_index=",g.level_index)
+
+  if key == "Down":
+    g.level_index+=1
+    select_scalar_field(g.sfield_index)
+    print("level_index=",g.level_index)
+
   if key == "Right":
     g.time_index+=1
-    print("time_index=",g.time_index)
     select_scalar_field(g.sfield_index)
+    print("time_index=",g.time_index)
 
   elif key == "Left":
     g.time_index-=1
-    print("time_index=",g.time_index)
     select_scalar_field(g.sfield_index)
+    print("time_index=",g.time_index)
 
   elif key == "m":
     print("toggle mesh visibility")

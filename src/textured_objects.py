@@ -2,7 +2,7 @@ import vtk
 import random
 from math import *
 import numpy as np
-
+import globals as g
 #_______________________________________________________________________
 def sphere2cart(lat,lon,R):
   p = [R*cos(lat)*cos(lon),R*cos(lat)*sin(lon),R*sin(lat)]
@@ -11,7 +11,7 @@ def sphere2cart(lat,lon,R):
 #_______________________________________________________________________
 class QuadSphere(vtk.vtkActor):
 
-  def __init__(self,lats,lons,field2d):
+  def __init__(self,lats,lons):
     vtk.vtkActor.__init__(self)
 
     nlon      = lons.size
@@ -22,19 +22,10 @@ class QuadSphere(vtk.vtkActor):
     quads     = vtk.vtkCellArray()
     stride    = 4                   # number of lats to skip
     R         = 1.0                 # radius of sphere
-    fieldMin  = np.amin(field2d)
-    fieldMax  = np.amax(field2d)
+    fieldMin  = 0 #np.amin(field2d)
+    fieldMax  = 1 #np.amax(field2d)
 
     self.vals.SetName('values')
-
-    # create color lookup table
-    nc  = vtk.vtkNamedColors()
-    self.lut = vtk.vtkLookupTable()
-    self.lut.Build()
-    self.lut.SetTableRange(fieldMin,fieldMax)
-    self.lut.SetHueRange(0.0,1.0)
-    self.lut.SetSaturationRange(1,1);
-    self.lut.SetValueRange(1.0,1.0);
 
     self.inds = []
 
@@ -62,28 +53,28 @@ class QuadSphere(vtk.vtkActor):
         id1 = pts.InsertNextPoint(p1)
         verts.InsertNextCell(1)
         verts.InsertCellPoint(id1)
-        self.vals.InsertNextValue(field2d[j1,i1]  )
+        self.vals.InsertNextValue(1)
         self.inds.append([j1,i1])
 
         p2  = sphere2cart(lat2,lon1,1.0)
         id2 = pts.InsertNextPoint(p2)
         verts.InsertNextCell(1)
         verts.InsertCellPoint(id2)
-        self.vals.InsertNextValue(field2d[j2,i1]  )
+        self.vals.InsertNextValue(1)
         self.inds.append([j2,i1])
 
         p3  = sphere2cart(lat2,lon2,1.0)
         id3 = pts.InsertNextPoint(p3)
         verts.InsertNextCell(1)
         verts.InsertCellPoint(id3)
-        self.vals.InsertNextValue(field2d[j2,i2]  )
+        self.vals.InsertNextValue(1)
         self.inds.append([j2,i2])
 
         p4  = sphere2cart(lat1,lon2,1.0)
         id4 = pts.InsertNextPoint(p4)
         verts.InsertNextCell(1)
         verts.InsertCellPoint(id4)
-        self.vals.InsertNextValue(field2d[j1 ,i2]  )
+        self.vals.InsertNextValue(1)
         self.inds.append([j1,i2])
 
         quad = vtk.vtkQuad()
@@ -102,7 +93,7 @@ class QuadSphere(vtk.vtkActor):
 
     self.ptMapper = vtk.vtkPolyDataMapper()
     self.ptMapper.SetInputData(self.polyData)
-    self.ptMapper.SetLookupTable(self.lut)
+    self.ptMapper.SetLookupTable(g.lut)
     self.ptMapper.SetScalarRange(fieldMin,fieldMax)
     self.ptMapper.SetScalarModeToUsePointData()
     self.ptMapper.SetScalarVisibility(1)
@@ -110,8 +101,8 @@ class QuadSphere(vtk.vtkActor):
     self.SetMapper(self.ptMapper)
     property = self.GetProperty()
     property.SetPointSize(1)
-    property.SetEdgeColor(0,0,0)
-    property.EdgeVisibilityOn()
+    property.SetEdgeColor(1,1,1)
+    property.EdgeVisibilityOff()
     property.SetLineWidth(0.1)
     property.SetDiffuse(1);
     property.SetSpecular(0.1)
@@ -130,7 +121,7 @@ class QuadSphere(vtk.vtkActor):
     fieldMin  = np.amin(field2d)
     fieldMax  = np.amax(field2d)
 
-    self.lut.SetTableRange(fieldMin,fieldMax)
+    g.lut.SetTableRange(fieldMin,fieldMax)
     self.ptMapper.SetScalarRange(fieldMin,fieldMax)
     self.polyData.Modified();
 
@@ -169,18 +160,14 @@ class DataSphere(vtk.vtkActor):
     poly.DeepCopy(source.GetOutput())
     poly.GetPointData().SetScalars(scalars)
 
-    lut = vtk.vtkLookupTable()
-    lut.SetTableRange(0,1)
-    lut.SetHueRange(0.0,1.0)
-    lut.SetSaturationRange(1,1);
-    lut.Build()
+    g.lut.SetTableRange(0,1)
 
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputData(poly)
     mapper.ScalarVisibilityOn()
     mapper.SetScalarModeToUsePointData()
     mapper.SetColorModeToMapScalars()
-    mapper.SetLookupTable(lut)
+    mapper.SetLookupTable(g.lut)
 
     self.SetMapper(mapper)
     self.GetProperty().SetEdgeColor(1,1,1)
