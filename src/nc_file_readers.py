@@ -31,7 +31,7 @@ def make_latlon_surface(lats,lons,field2d):
   verts     = vtk.vtkCellArray()
   vals      = vtk.vtkDoubleArray()
   quads     = vtk.vtkCellArray()
-  stride    = 4                   # number of lats to skip
+  stride    = 1                   # number of lats to skip
   R         = 1.0                 # radius of sphere
   fieldMin  = np.amin(field2d)
   fieldMax  = np.amax(field2d)

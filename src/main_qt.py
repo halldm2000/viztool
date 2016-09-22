@@ -12,6 +12,20 @@ from PyQt4            import QtCore, QtGui
 from vtk.qt4.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 #_______________________________________________________________________
+def set_time_index(i):
+  g.time_index = i
+  g.time_toolbar.time_index_label.setNum(i)
+  select_scalar_field(g.sfield_index)
+
+#_______________________________________________________________________
+def increment_time_index():
+  set_time_index(g.time_index+1)
+
+#_______________________________________________________________________
+def decrement_time_index():
+  set_time_index(g.time_index-1)
+
+#_______________________________________________________________________
 def select_scalar_field(i):
 
   global window
@@ -28,9 +42,28 @@ def select_scalar_field(i):
   if(field.ndim ==3):
     field2d = field[g.time_index,:,:]
 
-  g.quadsphere.set_scalar_field(field2d)
+  g.globe.set_scalar_field(field2d)
   window.renwin.Render()
   window.vtkWidget.setFocus()
+#_______________________________________________________________________
+def select_vector_field(i):
+  pass
+
+#_______________________________________________________________________
+def select_map_projection(i):
+
+  projection = g.fields_toolbar.projection_combo.itemData(i)
+  print("projection=",projection)
+  
+  if(projection=="globe"):
+    g.map.VisibilityOff()
+    g.globe.VisibilityOn()
+
+  elif(projection=="map"):
+    g.globe.VisibilityOff()
+    g.map.VisibilityOn()
+
+  window.renwin.Render()
 
 #_______________________________________________________________________
 def open_a_file():
@@ -54,13 +87,17 @@ def open_a_file():
   g.fields_toolbar = NCToolbar  (window,g.dataset)
   g.time_toolbar   = TimeToolbar(window,g.dataset)
 
+  # hook up buttons and comboboxes
   g.fields_toolbar.scalars_combo.currentIndexChanged.connect(select_scalar_field)
+  g.fields_toolbar.vectors_combo.currentIndexChanged.connect(select_vector_field)
+  g.fields_toolbar.projection_combo.currentIndexChanged.connect(select_map_projection)
+
+  g.time_toolbar.nextButton.clicked.connect(increment_time_index)
+  g.time_toolbar.previousButton.clicked.connect(decrement_time_index)
+
   # create a lat-lon surface for interpolated data
   lons    = g.dataset.variables['lon']
   lats    = g.dataset.variables['lat']
-  #ps_var  = g.dataset.variables['ps' ]
-
-#ps = ps_var[g.time_index+1,:,:]-ps_var[g.time_index,:,:]
 
   # init color lookup table
   nc  = vtk.vtkNamedColors()
@@ -72,10 +109,14 @@ def open_a_file():
   g.lut.SetValueRange(1.0,1.0);
 
   # create geometry from lat lon coords
-  # ren.RemoveAllViewProps();
+  ren.RemoveAllViewProps();
 
-  g.quadsphere = tobs.QuadSphere(lats,lons)
-  ren.AddActor(g.quadsphere)
+  g.globe = tobs.QuadSphere(lats,lons)
+  ren.AddActor(g.globe)
+
+  g.map = tobs.DataPlane(lats,lons)
+  g.map.VisibilityOff()
+  ren.AddActor(g.map)
 
   # add scalar bar actor
   scalarBar = vtk.vtkScalarBarActor()
@@ -121,14 +162,16 @@ def KeyPressed(obj,event):
     print("level_index=",g.level_index)
 
   if key == "Right":
-    g.time_index+=1
-    select_scalar_field(g.sfield_index)
-    print("time_index=",g.time_index)
+    set_time_index(g.time_index+1)
+    #g.time_index+=1
+    #select_scalar_field(g.sfield_index)
+    #print("time_index=",g.time_index)
 
   elif key == "Left":
-    g.time_index-=1
-    select_scalar_field(g.sfield_index)
-    print("time_index=",g.time_index)
+    set_time_index(g.time_index-1)
+    #g.time_index-=1
+    #select_scalar_field(g.sfield_index)
+    #print("time_index=",g.time_index)
 
   elif key == "m":
     print("toggle mesh visibility")

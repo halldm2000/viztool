@@ -20,7 +20,7 @@ class QuadSphere(vtk.vtkActor):
     verts     = vtk.vtkCellArray()
     self.vals = vtk.vtkDoubleArray()
     quads     = vtk.vtkCellArray()
-    stride    = 4                   # number of lats to skip
+    stride    = 1                   # number of lats to skip
     R         = 1.0                 # radius of sphere
     fieldMin  = 0 #np.amin(field2d)
     fieldMax  = 1 #np.amax(field2d)
@@ -125,6 +125,8 @@ class QuadSphere(vtk.vtkActor):
     self.ptMapper.SetScalarRange(fieldMin,fieldMax)
     self.polyData.Modified();
 
+
+
 #_______________________________________________________________________
 class DataSphere(vtk.vtkActor):
 
@@ -170,6 +172,52 @@ class DataSphere(vtk.vtkActor):
     mapper.SetLookupTable(g.lut)
 
     self.SetMapper(mapper)
+    self.GetProperty().SetEdgeColor(1,1,1)
+    self.GetProperty().EdgeVisibilityOn()
+    self.GetProperty().SetLineWidth(0.1)
+
+#_______________________________________________________________________
+class DataPlane(vtk.vtkActor):
+
+  def __init__(self,lats,lons):
+
+    vtk.vtkActor.__init__(self)
+
+    nlon = lons.size
+    nlat = lats.size
+
+    source = vtk.vtkPlaneSource()
+
+
+    reader = vtk.vtkJPEGReader()
+    reader.SetFileName("../images/earth.jpg")
+
+    atext = vtk.vtkTexture()
+    atext.SetInputConnection(reader.GetOutputPort())
+    atext.InterpolateOn()
+
+    plane       = vtk.vtkPlaneSource()
+    #plane.SetNormal(0,0,1)
+    # plane.SetResolution(nlat,nlon)
+    print(plane.GetPoint1())
+    print(plane.GetPoint2())
+    print(plane.GetOrigin())
+    print(plane.GetNormal())
+
+    plane.SetOrigin(0, 0, 0 );
+    plane.SetPoint1(4, 0, 0 );
+    plane.SetPoint2(0, 2, 0 );
+    plane.SetCenter(0, 0, 0 );
+
+    #plane.SetCenter(0,0,0)
+
+    planeMapper = vtk.vtkPolyDataMapper()
+    planeMapper.SetInputConnection(plane.GetOutputPort())
+
+    self.SetMapper(planeMapper)
+    self.SetTexture(atext)
+
+    self.GetProperty().SetAmbient(0.2);
     self.GetProperty().SetEdgeColor(1,1,1)
     self.GetProperty().EdgeVisibilityOn()
     self.GetProperty().SetLineWidth(0.1)

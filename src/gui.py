@@ -86,9 +86,9 @@ class TimeToolbar(QtGui.QToolBar):
     self.setStyleSheet('QToolBar{spacing:10px;}')
 
     #self.addSeparator()
-    self.addWidget(QtGui.QLabel("time index:"))
-    self.time_index = QtGui.QLabel("0")
-    self.addWidget(self.time_index)
+    self.addWidget(QtGui.QLabel("Time"))
+    self.time_index_label = QtGui.QLabel("0")
+    self.addWidget(self.time_index_label)
     #self.addSeparator()
 
     # add a button for playing backward
@@ -96,20 +96,30 @@ class TimeToolbar(QtGui.QToolBar):
     self.backwardButton.setIcon(self.style().standardIcon(QtGui.QStyle.SP_MediaSeekBackward))
     self.backwardButton.setToolTip("Play Backward")
 
+    # add a button for stepping backward
+    self.previousButton = QtGui.QToolButton()
+    self.previousButton.setIcon(self.style().standardIcon(QtGui.QStyle.SP_MediaPlay))
+    self.previousButton.setToolTip("Previous")
+
     # add a button for pausing time loop
     self.stopButton = QtGui.QToolButton()
     self.stopButton.setIcon(self.style().standardIcon(QtGui.QStyle.SP_MediaStop))
     self.stopButton.setToolTip("Stop")
-    #self.stopButton.clicked.connect(self.movie.setPaused)
 
-    # add a button for playing forward
+    # add a button for animating forward
+    self.nextButton = QtGui.QToolButton()
+    self.nextButton.setIcon(self.style().standardIcon(QtGui.QStyle.SP_MediaPlay))
+    self.nextButton.setToolTip("Next")
+
+    # add a button for animating forward
     self.forwardButton = QtGui.QToolButton()
     self.forwardButton.setIcon(self.style().standardIcon(QtGui.QStyle.SP_MediaSeekForward))
     self.forwardButton.setToolTip("Play Forward")
-    #self.playButton.clicked.connect(self.movie.start)
 
     self.addWidget(self.backwardButton)
+    self.addWidget(self.previousButton)
     self.addWidget(self.stopButton)
+    self.addWidget(self.nextButton)
     self.addWidget(self.forwardButton)
 
 #_______________________________________________________________________
@@ -123,13 +133,22 @@ class NCToolbar(QtGui.QToolBar):
     self.setStyleSheet('QToolBar{spacing:10px;}')
 
     window.addToolBar(self)
-    self.scalars_combo = QtGui.QComboBox()
-    self.vectors_combo = QtGui.QComboBox()
 
-    self.addWidget(QtGui.QLabel("scalar field:"))
+    self.addWidget(QtGui.QLabel("Fields"))
+
+    self.scalars_combo    = QtGui.QComboBox()
     self.addWidget(self.scalars_combo)
-    self.addWidget(QtGui.QLabel("vector field:"))
+    self.scalars_combo.addItem("--scalar field--","None")
+
+    self.vectors_combo    = QtGui.QComboBox()
     self.addWidget(self.vectors_combo)
+    self.vectors_combo.addItem("--vector field--","None")
+
+    self.projection_combo = QtGui.QComboBox()
+    self.addWidget(self.projection_combo)
+
+    self.projection_combo.addItem("globe" ,"globe")
+    self.projection_combo.addItem("map"   ,"map")
 
     # add scalar fields
     for variable in dataset.variables.values():
