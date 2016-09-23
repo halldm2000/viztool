@@ -33,18 +33,29 @@ def select_scalar_field(i):
   g.sfield_index = i
   text    = g.fields_toolbar.scalars_combo.itemText(i)
   varname = g.fields_toolbar.scalars_combo.itemData(i)
-  #print("text=",text," varname=",varname)
-  field = g.dataset.variables[varname]
 
-  if(field.ndim ==4):
-    field2d = field[g.time_index,g.level_index,:,:]
+  if(i == 0):
+    # no scalar field selected, hide data globe
+    g.dataGlobe.VisibilityOff()
+    g.scalarBar.VisibilityOff()
+
+  else:
+    # ensure data globe is visbile
+    g.dataGlobe.VisibilityOn()
+    g.scalarBar.VisibilityOn()
+
+    field   = g.dataset.variables[varname]
+    if(field.ndim ==4):
+      field2d = field[g.time_index,g.level_index,:,:]
   
-  if(field.ndim ==3):
-    field2d = field[g.time_index,:,:]
+    if(field.ndim ==3):
+      field2d = field[g.time_index,:,:]
 
-  g.globe.set_scalar_field(field2d)
+    g.dataGlobe.set_scalar_field(field2d)
+
   window.renwin.Render()
   window.vtkWidget.setFocus()
+
 #_______________________________________________________________________
 def select_vector_field(i):
   pass
@@ -52,18 +63,45 @@ def select_vector_field(i):
 #_______________________________________________________________________
 def select_map_projection(i):
 
-  projection = g.fields_toolbar.projection_combo.itemData(i)
+  projection = g.projection_toolbar.projection_combo.itemData(i)
   print("projection=",projection)
-  
-  if(projection=="globe"):
-    g.map.VisibilityOff()
-    g.globe.VisibilityOn()
+  camera = ren.GetActiveCamera()
 
-  elif(projection=="map"):
-    g.globe.VisibilityOff()
-    g.map.VisibilityOn()
+  if(projection=="globe"):
+
+    g.map2dAssembly.VisibilityOff()
+    g.globeAssembly.VisibilityOn()
+
+    if(g.dataGlobe !=None):
+      g.dataGlobe.VisibilityOn()
+
+    iren.SetInteractorStyle(vtk.vtkInteractorStyleTrackballCamera())
+    ren.ResetCamera()
+    camera.SetFocalPoint( 0.0, 0.0, 0.0 );
+    camera.SetViewUp(0,1,0)
+    camera.SetPosition(0,0,5)
+    camera.SetClippingRange(0.1,20)
+
+  elif(projection=="map2d"):
+
+    g.globeAssembly.VisibilityOff()
+    g.map2dAssembly.VisibilityOn()
+
+#if(g.dataGlobe !=None):
+#  g.dataGlobe.VisibilityOff()
+
+#g.textureGlobe.VisibilityOff()
+
+    g.mapActor.VisibilityOn()
+    iren.SetInteractorStyle(vtk.vtkInteractorStyleImage())
+    ren.ResetCamera()
+    camera.SetFocalPoint( 0.0, 0.0, 0.0 );
+    camera.SetViewUp(0,1,0)
+    camera.SetPosition(0,0,2.5)
+    camera.SetClippingRange(0.1,10)
 
   window.renwin.Render()
+  window.vtkWidget.setFocus()
 
 #_______________________________________________________________________
 def open_a_file():
@@ -85,12 +123,11 @@ def open_a_file():
   g.dataset        = read_netcdf_header(filename)
 
   g.fields_toolbar = NCToolbar  (window,g.dataset)
-  g.time_toolbar   = TimeToolbar(window,g.dataset)
+  g.time_toolbar   = TimeToolbar(window)
 
   # hook up buttons and comboboxes
   g.fields_toolbar.scalars_combo.currentIndexChanged.connect(select_scalar_field)
   g.fields_toolbar.vectors_combo.currentIndexChanged.connect(select_vector_field)
-  g.fields_toolbar.projection_combo.currentIndexChanged.connect(select_map_projection)
 
   g.time_toolbar.nextButton.clicked.connect(increment_time_index)
   g.time_toolbar.previousButton.clicked.connect(decrement_time_index)
@@ -108,38 +145,42 @@ def open_a_file():
   g.lut.SetSaturationRange(1,1);
   g.lut.SetValueRange(1.0,1.0);
 
-  # create geometry from lat lon coords
-  ren.RemoveAllViewProps();
-
-  g.globe = tobs.QuadSphere(lats,lons)
-  ren.AddActor(g.globe)
-
-  g.map = tobs.DataPlane(lats,lons)
-  g.map.VisibilityOff()
-  ren.AddActor(g.map)
+  # create a data sphere from nc data
+  g.dataGlobe = tobs.QuadSphere(lats,lons)
+  g.globeAssembly.AddPart(g.dataGlobe)
 
   # add scalar bar actor
-  scalarBar = vtk.vtkScalarBarActor()
-  scalarBar.SetOrientationToVertical()
-  scalarBar.SetLookupTable(g.lut)
-  scalarBar.SetWidth(0.08)
-  scalarBar.SetPosition(0.90,0.1)
-  scalarBar.SetTextPositionToPrecedeScalarBar()
-  ren.AddActor(scalarBar)
+  g.scalarBar = vtk.vtkScalarBarActor()
+  g.scalarBar.SetOrientationToVertical()
+  g.scalarBar.SetLookupTable(g.lut)
+  g.scalarBar.SetWidth(0.08)
+  g.scalarBar.SetPosition(0.90,0.1)
+  g.scalarBar.SetTextPositionToPrecedeScalarBar()
+  ren.AddActor(g.scalarBar)
 
-  select_scalar_field(g.sfield_index)
-
+  g.fields_toolbar.scalars_combo.setCurrentIndex(1)
 
 #_______________________________________________________________________
 def create_default_scene():
   global ren, iren
 
   # create textured sphere to represent the Earth
-  earthSphere = tobs.TexturedSphere(0.99,"../images/earth.jpg")
-  ren.AddActor(earthSphere.actor)
+  g.textureGlobe = tobs.TexturedSphere(0.99,"../images/earth.jpg")
+  g.globeAssembly = vtk.vtkAssembly()
+  g.globeAssembly.AddPart(g.textureGlobe)
+  ren.AddActor(g.globeAssembly)
+
+  # create textured plane for 2d map
+
+  g.map2dAssembly = vtk.vtkAssembly()
+  g.map2dAssembly.VisibilityOff()
+  ren.AddActor(g.map2dAssembly)
+
+  g.mapActor = tobs.TexturedPlane(2,1)
+  g.map2dAssembly.AddPart(g.mapActor)
 
   # create spinning earth animation
-  animation = animations.RevolveZAnimation(earthSphere.actor)
+  animation = animations.RevolveZAnimation(g.textureGlobe)
   iren.AddObserver('TimerEvent', animation.execute)
 
 def loadFile(fileame):
@@ -201,7 +242,10 @@ if __name__ == "__main__":
   ren     = window.renderer
   iren    = window.interactor
 
+  # connect controls to event handlers
   window.openAction.triggered.connect(open_a_file)
+  g.projection_toolbar = ProjectionToolbar(window)
+  g.projection_toolbar.projection_combo.currentIndexChanged.connect(select_map_projection)
 
   # create something interesting to look at, at startup
   create_default_scene()

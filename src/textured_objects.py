@@ -151,7 +151,6 @@ class DataSphere(vtk.vtkActor):
     npts = source.GetOutput().GetPoints().GetNumberOfPoints()
     points =source.GetOutput().GetPoints()
 
-
     scalars = vtk.vtkFloatArray()
     scalars.SetNumberOfValues(npts)
 
@@ -177,17 +176,16 @@ class DataSphere(vtk.vtkActor):
     self.GetProperty().SetLineWidth(0.1)
 
 #_______________________________________________________________________
-class DataPlane(vtk.vtkActor):
+class TexturedPlane(vtk.vtkActor):
 
-  def __init__(self,lats,lons):
+  def __init__(self,width,height):
 
     vtk.vtkActor.__init__(self)
 
-    nlon = lons.size
-    nlat = lats.size
+#nlon = lons.size
+#    nlat = lats.size
 
     source = vtk.vtkPlaneSource()
-
 
     reader = vtk.vtkJPEGReader()
     reader.SetFileName("../images/earth.jpg")
@@ -196,20 +194,13 @@ class DataPlane(vtk.vtkActor):
     atext.SetInputConnection(reader.GetOutputPort())
     atext.InterpolateOn()
 
-    plane       = vtk.vtkPlaneSource()
-    #plane.SetNormal(0,0,1)
-    # plane.SetResolution(nlat,nlon)
-    print(plane.GetPoint1())
-    print(plane.GetPoint2())
-    print(plane.GetOrigin())
-    print(plane.GetNormal())
-
-    plane.SetOrigin(0, 0, 0 );
-    plane.SetPoint1(4, 0, 0 );
-    plane.SetPoint2(0, 2, 0 );
-    plane.SetCenter(0, 0, 0 );
-
-    #plane.SetCenter(0,0,0)
+    plane = vtk.vtkPlaneSource()
+    plane.SetNormal(0, 0, 1)
+    plane.SetOrigin(0, 0, 0);
+    plane.SetPoint1(width, 0, 0);
+    plane.SetPoint2(0, height, 0);
+    plane.SetCenter(0, 0, 0);
+    #plane.SetResolution(nlat,nlon)
 
     planeMapper = vtk.vtkPolyDataMapper()
     planeMapper.SetInputConnection(plane.GetOutputPort())
@@ -223,9 +214,10 @@ class DataPlane(vtk.vtkActor):
     self.GetProperty().SetLineWidth(0.1)
 
 #_______________________________________________________________________
-class TexturedSphere:
+class TexturedSphere(vtk.vtkActor):
   
   def __init__(self,radius,fileName):
+    vtk.vtkActor.__init__(self)
 
     # create a sphere source
     source = vtk.vtkSphereSource()
@@ -256,15 +248,16 @@ class TexturedSphere:
     # create polygons from transformed texture coordinates
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputConnection(transform.GetOutputPort())
+    mapper.ScalarVisibilityOn()
+    mapper.SetScalarModeToUsePointData()
 
     # create a vtk actor using the polygons and texure
-    actor = vtk.vtkActor()
-    actor.SetMapper(mapper)
-    actor.SetTexture(texture)
-    actor.RotateX(90)
+    self.SetMapper(mapper)
+    self.SetTexture(texture)
+    self.RotateX(90)
     
     # set default actor properties of the textured sphere
-    property = actor.GetProperty()
+    property = self.GetProperty()
     property.LightingOn()
     property.SetColor(1,1,1)
     property.SetDiffuse(1);
@@ -281,5 +274,4 @@ class TexturedSphere:
     self.reader   = reader
     self.texture  = texture
     self.mapper   = mapper
-    self.actor    = actor
     self.property = property

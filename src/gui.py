@@ -77,7 +77,7 @@ class MainWindow(QtGui.QMainWindow):
 #_______________________________________________________________________
 class TimeToolbar(QtGui.QToolBar):
 
-  def __init__(self,window,dataset):
+  def __init__(self,window):
 
     super(TimeToolbar, self).__init__(window)
     window.addToolBar(self)
@@ -123,18 +123,35 @@ class TimeToolbar(QtGui.QToolBar):
     self.addWidget(self.forwardButton)
 
 #_______________________________________________________________________
+class ProjectionToolbar(QtGui.QToolBar):
+
+  def __init__(self,window):
+
+    super(ProjectionToolbar, self).__init__(window)
+    self.setIconSize(QtCore.QSize(24, 24))
+    self.setStyleSheet('QToolBar{spacing:10px;}')
+    window.addToolBar(self)
+
+    self.addWidget(QtGui.QLabel("projection:"))
+
+    self.projection_combo = QtGui.QComboBox()
+    self.addWidget(self.projection_combo)
+
+    self.projection_combo.addItem("globe" ,"globe")
+    self.projection_combo.addItem("map 2d" ,"map2d")
+
+
+#_______________________________________________________________________
 class NCToolbar(QtGui.QToolBar):
 
   def __init__(self,window,dataset):
     
     super(NCToolbar, self).__init__(window)
-
     self.setIconSize(QtCore.QSize(24, 24))
     self.setStyleSheet('QToolBar{spacing:10px;}')
-
     window.addToolBar(self)
 
-    self.addWidget(QtGui.QLabel("Fields"))
+    self.addWidget(QtGui.QLabel("netcdf:"))
 
     self.scalars_combo    = QtGui.QComboBox()
     self.addWidget(self.scalars_combo)
@@ -143,12 +160,6 @@ class NCToolbar(QtGui.QToolBar):
     self.vectors_combo    = QtGui.QComboBox()
     self.addWidget(self.vectors_combo)
     self.vectors_combo.addItem("--vector field--","None")
-
-    self.projection_combo = QtGui.QComboBox()
-    self.addWidget(self.projection_combo)
-
-    self.projection_combo.addItem("globe" ,"globe")
-    self.projection_combo.addItem("map"   ,"map")
 
     # add scalar fields
     for variable in dataset.variables.values():
