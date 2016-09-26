@@ -125,8 +125,6 @@ class QuadSphere(vtk.vtkActor):
     self.ptMapper.SetScalarRange(fieldMin,fieldMax)
     self.polyData.Modified();
 
-
-
 #_______________________________________________________________________
 class DataSphere(vtk.vtkActor):
 
@@ -182,11 +180,6 @@ class TexturedPlane(vtk.vtkActor):
 
     vtk.vtkActor.__init__(self)
 
-#nlon = lons.size
-#    nlat = lats.size
-
-    source = vtk.vtkPlaneSource()
-
     reader = vtk.vtkJPEGReader()
     reader.SetFileName("../images/earth.jpg")
 
@@ -200,13 +193,147 @@ class TexturedPlane(vtk.vtkActor):
     plane.SetPoint1(width, 0, 0);
     plane.SetPoint2(0, height, 0);
     plane.SetCenter(0, 0, 0);
-    #plane.SetResolution(nlat,nlon)
+
+    warpScalar = vtk.vtkWarpScalar()
+    warpScalar.SetInputConnection(plane.GetOutputPort());
+    warpScalar.SetScaleFactor(1);
+    warpScalar.UseNormalOn();
+    warpScalar.SetNormal(0, 0, 1);
+    warpScalar.Update();
 
     planeMapper = vtk.vtkPolyDataMapper()
     planeMapper.SetInputConnection(plane.GetOutputPort())
 
     self.SetMapper(planeMapper)
     self.SetTexture(atext)
+
+    self.GetProperty().SetAmbient(0.2);
+    self.GetProperty().SetEdgeColor(1,1,1)
+    self.GetProperty().EdgeVisibilityOn()
+    self.GetProperty().SetLineWidth(0.1)
+
+#_______________________________________________________________________
+class LatLonSurface(vtk.vtkActor):
+
+  def __init__(self,lats,lons):
+
+    vtk.vtkActor.__init__(self)
+
+    points  = vtk.vtkPoints()
+    self.vals = vtk.vtkFloatArray()
+
+    nlon = lons.size
+    nlat = lats.size
+
+    scale = 4.0/360.0
+    self.inds = []
+
+    for j in range(0,nlat-1):
+      for i in range(0,nlon-1):
+        x = -2 + lons[i]*scale
+        y =  0 + lats[j]*scale
+        z =  cos(3.14*x)*sin(3.14*y)
+        print("x = ",x,"y = ",y)
+        points.InsertNextPoint(x,y,0)
+        self.vals.InsertNextValue(z)
+        self.inds.append([j,i])
+
+    self.polyData = vtk.vtkPolyData()
+    self.polyData.SetPoints(points)
+    self.polyData.GetPointData().SetScalars(self.vals)
+
+    delaunay2D = vtk.vtkDelaunay2D()
+    delaunay2D.SetInputData(self.polyData)
+    delaunay2D.Update()
+
+    self.mapper = vtk.vtkDataSetMapper()
+    self.mapper.SetInputConnection(delaunay2D.GetOutputPort())
+
+    self.mapper.SetColorModeToMapScalars()
+    self.mapper.SetLookupTable(g.lut)
+
+    self.SetMapper(self.mapper)
+    self.GetProperty().SetAmbient(0.2);
+    self.GetProperty().SetEdgeColor(1,1,1)
+    self.GetProperty().EdgeVisibilityOff()
+    self.GetProperty().SetLineWidth(0.1)
+
+  #.....................................................................
+  def set_scalar_field(self,field2d,update_range):
+
+    self.min  = np.amin(field2d)
+    self.max  = np.amax(field2d)
+    self.range= self.max - self.min
+    self.mean = (self.max + self.min)/2
+
+    points = self.polyData.GetPoints()
+
+    # set vertical scale
+    sv = 0.5/self.range
+
+    for i,ind in enumerate(self.inds):
+
+      val = field2d[ind[0],ind[1]]
+      # change surface colors
+      self.vals.SetValue(i,val)
+
+      # change geometry
+      pt = points.GetPoint(i)
+      points.SetPoint(i, pt[0],pt[1],(val-self.mean)*sv)
+
+      if(update_range==True):
+        self.mapper.SetScalarRange(self.min,self.max)
+
+    self.polyData.Modified();
+
+#_______________________________________________________________________
+class DataSurface(vtk.vtkActor):
+
+  def __init__(self,width,height):
+
+    vtk.vtkActor.__init__(self)
+
+    #reader = vtk.vtkJPEGReader()
+    #reader.SetFileName("../images/earth.jpg")
+
+    nlat = 90
+    nlon = 180
+
+    myArray = vtk.vtkDoubleArray()
+    myArray.SetName('zcoords')
+    myArray.SetNumberOfComponents(1)
+    myArray.SetNumberOfTuples(nlat*nlon)
+    for x in range(0,nlon-1):
+      for y in range(0,nlat-1):
+        myArray.SetValue( x*nlon + y, random.random() )
+
+    image_data = vtk.vtkImageData()
+    image_data.SetDimensions(180,90,1)
+    image_data.SetOrigin(0,0,0)
+    image_data.SetSpacing(1./90,1./90, 1)
+    image_data.SetScalarType(vtk.VTK_DOUBLE)
+    image_data.GetPointData().SetScalars(myArray)
+
+    dataMapper = vtk.vtkDataSetMapper()
+    dataMapper = vtk.SetInput(image_data)
+    dataMapper.ScalarVisibilityOn()
+
+#    atext = vtk.vtkTexture()
+#    atext.SetInputConnection(reader.GetOutputPort())
+#    atext.InterpolateOn()
+
+#   warpScalar = vtk.vtkWarpScalar()
+#    warpScalar.SetInputConnection(plane.GetOutputPort());
+#    warpScalar.SetScaleFactor(1);
+#    warpScalar.UseNormalOn();
+#    warpScalar.SetNormal(0, 0, 1);
+#    warpScalar.Update();
+
+#planeMapper = vtk.vtkPolyDataMapper()
+#    planeMapper.SetInputConnection(plane.GetOutputPort())
+
+    self.SetMapper(dataMapper)
+    #self.SetTexture(atext)
 
     self.GetProperty().SetAmbient(0.2);
     self.GetProperty().SetEdgeColor(1,1,1)

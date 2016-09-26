@@ -139,6 +139,7 @@ class ProjectionToolbar(QtGui.QToolBar):
 
     self.projection_combo.addItem("globe" ,"globe")
     self.projection_combo.addItem("map 2d" ,"map2d")
+    self.projection_combo.addItem("map 3d" ,"map3d")
 
 
 #_______________________________________________________________________
